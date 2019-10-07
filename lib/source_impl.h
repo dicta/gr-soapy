@@ -25,6 +25,7 @@
 
 #include <soapy/source.h>
 #include <boost/bind.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <SoapySDR/Version.hpp>
 #include <SoapySDR/Modules.hpp>
@@ -44,7 +45,20 @@ namespace gr {
     {
      private:
       SoapySDR::Device* d_device;
+      std::string d_devname;
       SoapySDR::Stream* d_stream;
+
+      bool isStopped;
+      boost::recursive_mutex d_mutex;
+      bool isUHD;
+	  int flags = 0;
+	  long long timeNs = 0;
+
+
+      //! Timeout value for readStream call. Lower values mean lower latency.
+      double _recv_timeout;
+      // receive timeout converted to microsec for call
+      long timeoutUs;
 
       size_t d_mtu;
       pmt::pmt_t d_message_port;
@@ -55,16 +69,19 @@ namespace gr {
       float d_bandwidth;
       std::string d_antenna;
       size_t d_nchan;
-      gr_complex d_dc_offset;
+      gr_complexd d_dc_offset;
       bool d_dc_offset_auto_mode;
       bool d_gain_auto_mode;
       double d_frequency_correction;
-      gr_complex d_iq_balance;
+      gr_complexd d_iq_balance;
       double d_clock_rate;
       std::string d_clock_source;
       std::string d_frontend_mapping;
       std::string d_type;
       uint8_t d_type_size;
+
+      virtual bool hasThisGain(size_t channel, std::string gainType);
+      virtual void setGain(size_t channel, float gain, bool manual_mode, std::string gainType);
 
       void register_msg_cmd_handler(const pmt::pmt_t &cmd, cmd_handler_t handler);
       std::map<pmt::pmt_t, cmd_handler_t> d_cmd_handlers;
@@ -81,13 +98,17 @@ namespace gr {
       }
 
      public:
-      source_impl(size_t nchan, const std::string device, const std::string args, float sampling_rate, const std::string type);
+      source_impl(size_t nchan, const std::string device, const std::string devname, const std::string args, float sampling_rate, const std::string type);
       ~source_impl();
+
+      virtual bool stop();
 
       // Where all the action really happens
       int work(int noutput_items,
          gr_vector_const_void_star &input_items,
          gr_vector_void_star &output_items);
+
+      virtual std::vector<std::string> listAntennas(int channel);
 
       /*!
        * Create and store a new Device object using the make function of SoapySDR
@@ -128,7 +149,13 @@ namespace gr {
        */
       void set_frequency(size_t channel, const std::string &name, float frequency);
 
-      /*!
+      virtual void set_overall_gain(size_t channel, float gain, bool manual_mode);
+
+      virtual bool hasDCOffset(int channel);
+      virtual bool hasIQBalance(int channel);
+      virtual bool hasFrequencyCorrection(int channel);
+
+     /*!
        * Set the overall gain for the specified RX chain.
        * The gain will be distributed automatically across available
        * elements according to Soapy API.
@@ -143,7 +170,7 @@ namespace gr {
        * \param name an available gain on the device
        * \param gain gain the new amplification value in dB
        */
-      void set_gain(size_t channel, const std::string name, float gain);
+      void set_gain(size_t channel, const std::string name, float gain, bool manual_mode);
 
       /*!
        * Set the automatic gain mode for the specified chain if supported.
@@ -352,8 +379,6 @@ namespace gr {
        * @param chann an available channel on the device
        */
       void cmd_handler_antenna(pmt::pmt_t val, size_t chann);
-      
-      bool stop();
     };
   } // namespace soapy
 } // namespace gr

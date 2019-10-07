@@ -4,7 +4,7 @@ gr-soapy is a GNURadio wrapper for the SoapySDR library.
 ## Install
 
 ### Requirements
-* GNU Radio ( > 3.7.7 )
+* GNU Radio ( >= 3.8)
 * CMake ( > 3.1)
 * G++
 * VOLK

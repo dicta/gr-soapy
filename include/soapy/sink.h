@@ -70,7 +70,7 @@ namespace gr {
        * Driver name can be any of "uhd", "lime", "airspy",
        * "rtlsdr" or others
        */
-      static sptr make(size_t nchan, const std::string device, const std::string args, float sampling_rate, const std::string type, const std::string length_tag_name = "");
+      static sptr make(size_t nchan, const std::string device, const std::string devname, const std::string args, float sampling_rate, const std::string type, const std::string length_tag_name = "");
 
       /*!
        * Callback to set overall gain
@@ -79,13 +79,20 @@ namespace gr {
        */
       virtual void set_gain(size_t channel, float gain) = 0;
 
+      virtual void set_overall_gain(size_t channel, float gain, bool manual_mode) = 0;
+      virtual bool hasDCOffset(int channel) = 0;
+      virtual bool hasIQBalance(int channel) = 0;
+      virtual bool hasFrequencyCorrection(int channel) = 0;
+
+      virtual std::vector<std::string> listAntennas(int channel) = 0;
+
       /*!
        * Callback to set specific gain value
        * \param channel an available channel on the device
        * \param name the gain name to set value
        * \param gain the gain value
        */
-      virtual void set_gain(size_t channel, const std::string name, float gain) = 0;
+      virtual void set_gain(size_t channel, const std::string name, float gain, bool manual_mode) = 0;
 
       /*!
        * Callback to change the RF frequency of the device

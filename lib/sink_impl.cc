@@ -25,6 +25,7 @@
 
 #include <gnuradio/io_signature.h>
 #include "sink_impl.h"
+#include <SoapySDR/Formats.h>
 
 const pmt::pmt_t CMD_CHAN_KEY = pmt::mp ("chan");
 const pmt::pmt_t CMD_FREQ_KEY = pmt::mp ("freq");
@@ -39,17 +40,17 @@ namespace gr
   {
 
     sink::sptr
-    sink::make (size_t nchan, const std::string device, const std::string args,
+    sink::make (size_t nchan, const std::string device, const std::string devname, const std::string args,
                 float sampling_rate, std::string type, const std::string length_tag_name)
     {
       return gnuradio::get_initial_sptr (
-          new sink_impl (nchan, device, args, sampling_rate, type, length_tag_name));
+          new sink_impl (nchan, device, devname, args, sampling_rate, type, length_tag_name));
     }
 
     /*
      * The private constructor
      */
-    sink_impl::sink_impl (size_t nchan, const std::string device,
+    sink_impl::sink_impl (size_t nchan, const std::string device,const std::string devname,
                           const std::string args, float sampling_rate,
                           const std::string type, const std::string length_tag_name) :
             gr::sync_block ("sink", args_to_io_sig (type, nchan),
@@ -62,25 +63,49 @@ namespace gr
             d_length_tag_key(length_tag_name.empty()? pmt::PMT_NIL : pmt::string_to_symbol(length_tag_name)),
             d_burst_remaining(0)
     {
+      isStopped = false;
+      d_devname = devname;
+
       if (type == "fc32") {
         d_type_size = 8;
-        d_type = "CF32";
+        d_type = SOAPY_SDR_CF32;
+      } else if (type == "sc16") {
+        d_type_size = 4;
+        d_type = SOAPY_SDR_CS16;
+      } else if (type == "sc8") {
+          d_type_size = 2;
+          d_type = SOAPY_SDR_CS8;
       }
-      if (type == "s16") {
-        d_type_size = 2;
-        d_type = "S16";
+
+      int madeDevice = makeDevice (device);
+
+      if (madeDevice == EXIT_FAILURE) {
+    	exit(0);
       }
-      std::string str_args = device;
-      SoapySDR::Kwargs dev_args = SoapySDR::KwargsFromString (args);
-      makeDevice (device);
+
+      if (d_nchan > d_device->getNumChannels(SOAPY_SDR_TX)) {
+      	std::string msgString = "[Soapy Sink] ERROR: Unsupported number of channels. Only  " + std::to_string(d_device->getNumChannels(SOAPY_SDR_TX)) + " channels available.";
+    	  throw std::runtime_error(msgString);
+      }
+
       std::vector<size_t> channs;
       channs.resize (d_nchan);
       for (size_t i = 0; i < d_nchan; i++) {
         channs[i] = i;
+
+        SoapySDR::RangeList sampRange = d_device->getSampleRateRange(SOAPY_SDR_TX,i);
+
+        if ( (d_sampling_rate < sampRange.front().minimum()) || (d_sampling_rate > sampRange.back().maximum()) ) {
+        	//std::string msgString = boost::format("[Soapy Source] ERROR: Unsupported sample rate.   %f <= rate <= %f") % sampRange.front().minimum() % sampRange.back().maximum();
+        	std::string msgString = "[Soapy Sink] ERROR: Unsupported sample rate.  Rate must be between " + std::to_string(sampRange.front().minimum()) + " and " + std::to_string(sampRange.back().maximum());
+      	  throw std::runtime_error(msgString);
+        }
+
         set_sample_rate (i, d_sampling_rate);
       }
 
-      d_stream = d_device->setupStream (SOAPY_SDR_TX, "CF32", channs, dev_args);
+      SoapySDR::Kwargs dev_args = SoapySDR::KwargsFromString (args);
+      d_stream = d_device->setupStream (SOAPY_SDR_TX, d_type, channs, dev_args);
       d_device->activateStream (d_stream);
       d_mtu = d_device->getStreamMTU (d_stream);
       
@@ -111,12 +136,21 @@ namespace gr
       set_max_noutput_items (d_mtu); // limit max samples per call to MTU
     }
 
+
+    bool sink_impl::stop() {
+    	if (!isStopped) {
+    	      unmakeDevice (d_device);
+    	      isStopped = true;
+    	}
+
+    	return true;
+    }
     /*
      * Our virtual destructor.
      */
     sink_impl::~sink_impl ()
     {
-      unmakeDevice (d_device);
+    	stop();
     }
 
     void
@@ -152,62 +186,158 @@ namespace gr
       return EXIT_SUCCESS;
     }
 
+    bool sink_impl::hasDCOffset(int channel) {
+    	return d_device->hasDCOffset(SOAPY_SDR_TX,channel);
+    }
+    bool sink_impl::hasIQBalance(int channel) {
+    	return d_device->hasIQBalance(SOAPY_SDR_TX,channel);
+    }
+    bool sink_impl::hasFrequencyCorrection(int channel) {
+    	return d_device->hasFrequencyCorrection(SOAPY_SDR_TX,channel);
+    }
+
     void
     sink_impl::set_frequency (size_t channel, float frequency)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setFrequency (SOAPY_SDR_TX, channel, frequency);
-      d_frequency = d_device->getFrequency (SOAPY_SDR_RX, channel);
+      d_frequency = d_device->getFrequency (SOAPY_SDR_TX, channel);
     }
 
     void
     sink_impl::set_frequency (size_t channel, const std::string &name,
                               float frequency)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setFrequency (SOAPY_SDR_TX, channel, name, frequency);
+    }
+
+    bool sink_impl::hasThisGain(size_t channel, std::string gainType) {
+    	std::vector<std::string> gainList = d_device->listGains(SOAPY_SDR_TX,channel);
+
+    	if(std::find(gainList.begin(), gainList.end(), gainType) != gainList.end()) {
+    		return true;
+    	}
+    	else {
+    		return false;
+    	}
+    }
+
+    void sink_impl::setGain(size_t channel, float gain, bool manual_mode, std::string gainType) {
+    	if (channel >= d_nchan || !manual_mode)
+    		return;
+
+    	if (!hasThisGain(channel,gainType))
+    			return;
+
+    	SoapySDR::Range rGain = d_device->getGainRange(SOAPY_SDR_TX, channel,gainType);
+
+    	if (gain < rGain.minimum() || gain > rGain.maximum()) {
+            GR_LOG_WARN(d_logger, boost::format("[Soapy Sink] WARN: %s gain out of range: %d <= gain <= %d") % gainType % rGain.minimum() % rGain.maximum());
+    	}
+
+        d_device->setGain (SOAPY_SDR_TX, channel, gainType, gain);
+        d_gain = d_device->getGain (SOAPY_SDR_TX, channel);
     }
 
     void
     sink_impl::set_gain (size_t channel, float gain)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setGain (SOAPY_SDR_TX, channel, gain);
       d_gain = d_device->getGain (SOAPY_SDR_TX, channel);
     }
 
     void
-    sink_impl::set_gain (size_t channel, const std::string name, float gain)
+    sink_impl::set_gain (size_t channel, const std::string name, float gain, bool manual_mode)
     {
-      d_device->setGain (SOAPY_SDR_TX, channel, name, gain);
-      d_gain = d_device->getGain (SOAPY_SDR_TX, channel);
+    	setGain(channel,gain,manual_mode,name);
+    }
+
+    void
+	sink_impl::set_overall_gain(size_t channel, float gain, bool manual_mode) {
+    	if (channel >= d_nchan || !manual_mode)
+    		return;
+
+    	SoapySDR::Range rGain = d_device->getGainRange(SOAPY_SDR_TX, channel);
+
+    	if (gain < rGain.minimum() || gain > rGain.maximum()) {
+            GR_LOG_WARN(d_logger, boost::format("[Soapy Sink] WARN: gain out of range: %d <= gain <= %d") % rGain.minimum() % rGain.maximum());
+            return;
+    	}
+
+    	set_gain(channel,gain);
     }
 
     void
     sink_impl::set_gain_mode (size_t channel, bool gain_auto_mode)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setGainMode (SOAPY_SDR_TX, channel, gain_auto_mode);
     }
 
     void
     sink_impl::set_sample_rate (size_t channel, float sample_rate)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setSampleRate (SOAPY_SDR_TX, channel, sample_rate);
     }
 
     void
     sink_impl::set_bandwidth (size_t channel, float bandwidth)
     {
+    	if (channel >= d_nchan)
+    		return;
+
       d_device->setBandwidth (SOAPY_SDR_TX, channel, bandwidth);
+    }
+
+    std::vector<std::string> sink_impl::listAntennas(int channel) {
+    	if ((size_t)channel >= d_nchan)
+    		return std::vector<std::string>();
+
+    	return d_device->listAntennas(SOAPY_SDR_RX,channel);
     }
 
     void
     sink_impl::set_antenna (const size_t channel, const std::string &name)
     {
+    	if (channel >= d_nchan)
+    		return;
+
+    	std::vector<std::string> antennaList = d_device->listAntennas(SOAPY_SDR_TX,channel);
+
+    	if (antennaList.size() > 0) {
+        	if(std::find(antennaList.begin(), antennaList.end(), name) == antennaList.end()) {
+                GR_LOG_WARN(d_logger, boost::format("[Soapy Sink] WARN: Antenna name %s not supported.") % name);
+        		return;
+        	}
+    	}
+
       d_device->setAntenna (SOAPY_SDR_TX, channel, name);
+      d_antenna = name;
     }
 
     void
     sink_impl::set_dc_offset (size_t channel, gr_complexd dc_offset,
                               bool dc_offset_auto_mode)
     {
+    	if (channel >= d_nchan)
+    		return;
+
+    	if (!hasDCOffset(channel))
+    		return;
+
       /* If DC Correction is supported but automatic mode is not set DC correction */
       if (!dc_offset_auto_mode
           && d_device->hasDCOffset (SOAPY_SDR_TX, channel)) {
@@ -219,6 +349,12 @@ namespace gr
     void
     sink_impl::set_dc_offset_mode (size_t channel, bool dc_offset_auto_mode)
     {
+    	if (channel >= d_nchan)
+    		return;
+
+    	if (!hasDCOffset(channel))
+    		return;
+
       /* If user specifies automatic DC Correction and is supported activate it */
       if (dc_offset_auto_mode
           && d_device->hasDCOffsetMode (SOAPY_SDR_TX, channel)) {
@@ -230,6 +366,12 @@ namespace gr
     void
     sink_impl::set_frequency_correction (size_t channel, double freq_correction)
     {
+    	if (channel >= d_nchan)
+    		return;
+
+    	if (!hasFrequencyCorrection(channel))
+    		return;
+
       /* If the device supports Frequency correction set value */
       if (d_device->hasFrequencyCorrection (SOAPY_SDR_TX, channel)) {
         d_device->setFrequencyCorrection (SOAPY_SDR_TX, channel,
@@ -241,6 +383,12 @@ namespace gr
     void
     sink_impl::set_iq_balance (size_t channel, gr_complexd iq_balance)
     {
+    	if (channel >= d_nchan)
+    		return;
+
+    	if (!hasIQBalance(channel))
+    		return;
+
       /* If the device supports IQ blance correction set value */
       if (d_device->hasIQBalance (SOAPY_SDR_TX, channel)) {
         d_device->setIQBalance (SOAPY_SDR_TX, channel, iq_balance);
@@ -396,8 +544,10 @@ namespace gr
         }
       }
 
-      int write = d_device->writeStream (d_stream, &input_items[0], ninput_items, flags,
-                                         timeNs);
+      boost::this_thread::disable_interruption disable_interrupt;
+      int write = d_device->writeStream (d_stream, &input_items[0], ninput_items, flags, timeNs);
+      boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
+
       // Tell runtime system how many output items we produced.
       if (write < 0) return 0;
       if (d_burst_remaining > 0) d_burst_remaining -= write;

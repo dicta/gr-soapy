@@ -24,6 +24,7 @@
 
 #include <soapy/sink.h>
 #include <boost/bind.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <SoapySDR/Version.hpp>
 #include <SoapySDR/Modules.hpp>
@@ -44,6 +45,9 @@ namespace gr {
      private:
       SoapySDR::Device* d_device;
       SoapySDR::Stream* d_stream;
+
+      std::string d_devname;
+      bool isStopped;
 
       size_t d_mtu;
       pmt::pmt_t d_message_port;
@@ -68,6 +72,10 @@ namespace gr {
       const pmt::pmt_t d_length_tag_key;
       long d_burst_remaining;
 
+      virtual bool hasThisGain(size_t channel, std::string gainType);
+      virtual void setGain(size_t channel, float gain, bool manual_mode, std::string gainType);
+
+
       void register_msg_cmd_handler(const pmt::pmt_t &cmd, cmd_handler_t handler);
       std::map<pmt::pmt_t, cmd_handler_t> d_cmd_handlers;
 
@@ -85,13 +93,17 @@ namespace gr {
       void tag_work(int noutput_items);
 
      public:
-      sink_impl(size_t nchan, const std::string device, const std::string args, float sampling_rate, const std::string type, const std::string length_tag_name);
+      sink_impl(size_t nchan, const std::string device, const std::string devname, const std::string args, float sampling_rate, const std::string type, const std::string length_tag_name);
       ~sink_impl();
+
+      virtual bool stop();
 
       // Where all the action really happens
       int work(int noutput_items,
          gr_vector_const_void_star &input_items,
          gr_vector_void_star &output_items);
+
+      virtual std::vector<std::string> listAntennas(int channel);
 
       /*!
        * Create and store a new Device object using the make function of SoapySDR
@@ -132,6 +144,12 @@ namespace gr {
        */
       void set_frequency(size_t channel, const std::string &name, float frequency);
 
+      virtual void set_overall_gain(size_t channel, float gain, bool manual_mode);
+
+      virtual bool hasDCOffset(int channel);
+      virtual bool hasIQBalance(int channel);
+      virtual bool hasFrequencyCorrection(int channel);
+
       /*!
        * Set the overall gain for the specified TX chain.
        * The gain will be distributed automatically across available
@@ -147,7 +165,7 @@ namespace gr {
        * \param name an available gain on the device
        * \param gain gain the new amplification value in dB
        */
-      void set_gain(size_t channel, const std::string name, float gain);
+      void set_gain(size_t channel, const std::string name, float gain, bool manual_mode);
 
       /*!
        * Set the automatic gain mode for the TX chain if supported.

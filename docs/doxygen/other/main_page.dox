@@ -2,15 +2,9 @@
 
 Welcome to the GNU Radio SOAPY Block
 
-<b>gr-Soapy</b> is an OOT module for the <a href="https://www.gnuradio.org/">GNU Radio</a>
- platform based on <a href="https://github.com/pothosware/SoapySDR">SoapySDR</a> API. 
-The main goal of the blocks are to provide a generic interface to effortlessly configure
-SDR devices. gr-Soapy implements two distinct blocks, one for RX and one for TX, that
-dynamically change their parameter fields according to the specified device used to simplify the 
-necessary options to be configured by the user. Also, for devices that are not specifically
-supported by the blocks, various general options are avaible to configure any device that
-is supported by the SoapySDR API. The list for supported devices can be found
-<a href="https://gitlab.com/librespacefoundation/gr-soapy/wikis/Supported%20devices">here</a>
-
+This is the intro page for the Doxygen manual generated for the SOAPY
+block (docs/doxygen/other/main_page.dox). Edit it to add more detailed
+documentation about the new GNU Radio modules contained in this
+project.
 
 */

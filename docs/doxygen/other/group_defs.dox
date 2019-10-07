@@ -1,25 +1,7 @@
 /*!
  * \defgroup block GNU Radio SOAPY C++ Signal Processing Blocks
- * \brief Module implemented blocks
+ * \brief All C++ blocks that can be used from the SOAPY GNU Radio
+ *        module are listed here or in the subcategories below.
+ *
  */
- 
-  /*!
-   * \page messages Messages
-   * Source and sink blocks support asynchronous messages to update
-   * block parameters. A simple way to create a new dictionary is to
-   * call\n
-   * <b>pmt.dict_add (pmt.make_dict(), pmt.intern(key), pmt.from_double(value))</b>\n
-   * which creates a new dictionary and adds the key, value pair.
-   *
-   * \section cmd_handler PMT message syntax
-   * Message handlers expect a dictionary for
-   * setting device parameters from asynchronous input messages.
-   * Key must be a pmt dictionary mapping the parameter to its
-   * value to be updated. pmt::dict keys can be any of the following: \n
-   * "chann"     : Corresponding channel index (int)\n
-   * "freq"      : Center frequency (Hz) \n
-   * "gain"      : Gain value (dB) \n
-   * "antenna"   : Antenna (string)\n
-   * "samp_rate" : Sampling rate (samples/second)\n
-   * "bw"        : Bandwidth (Hz)
-   */
+
