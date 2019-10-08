@@ -21,11 +21,11 @@ parameters:
     default: 'rtlsdr'
     options: ['airspy', 'bladerf', 'hackrf', 'lime', 'plutosdr', 'rtlsdr', 'sidekiq', 'sdrplay', 'uhd', 'xtrxsoapy', 'custom']
     option_labels: ['airspy', 'bladerf', 'hackrf', 'lime', 'plutosdr', 'rtlsdr', 'sidekiq', 'sdrplay', 'uhd', 'xtrxsoapy', 'custom']
-    hide: none
 -   id: dev
     label: Device String
     dtype: string
     default: 'driver=rtlsdr'
+    hide: ${ 'none' if (devname == 'custom') else 'all' }
 -   id: args
     label: Args
     dtype: string
@@ -59,19 +59,19 @@ parameters:
     default: '0'
     hide: ${ 'all' if (devname == 'uhd' or devname == 'plutosdr' or devname == 'airspy' or devname == 'rtlsdr') else 'part' }
 -   id: manual_gain0
-    label: 'Ch0: Gain Mode'
+    label: 'Ch0: Enable Manual Gain'
     category: RF Options
-    dtype: enum
+    dtype: bool
     default: 'True'
     options: ['True', 'False']
     option_labels: [Manual, Auto]
     hide: part
 -   id: overall_gain0
-    label: 'Ch0: Gain Value'
+    label: 'Ch0: Overall Gain Value'
     category: RF Options
     dtype: real
     default: '10'
-    hide: ${ 'none' if ( (devname == 'uhd' or devname == 'bladerf' or devname == 'sidekiq' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'uhd' or devname == 'bladerf' or devname == 'sidekiq' or devname == 'custom') or not manual_gain0) else 'all' }
 -   id: pga_gain0
     label: 'Ch0: PGA Gain Value'
     category: RF Options
@@ -83,49 +83,49 @@ parameters:
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: tia_gain0
     label: 'Ch0: TIA Gain Value'
     category: RF Options
     dtype: float
     default: '0'
-    hide: ${ 'none' if ( (devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: mix_gain0
     label: 'Ch0: MIX Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: vga_gain0
     label: 'Ch0: VGA Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'hackrf' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'hackrf' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: tuner_gain0
     label: 'Ch0: TUNER Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'rtlsdr' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'rtlsdr' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: amp_gain0
     label: 'Ch0: AMP Gain Value'
     category: RF Options
     dtype: float
     default: '0'
-    hide: ${ 'none' if ( (devname == 'hackrf' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'hackrf' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: ifgr_gain
     label: 'Ch0: IFGR Gain Value'
     category: RF Options
     dtype: float
     default: '59'
-    hide: ${ 'none' if ( (devname == 'sdrplay'  or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'sdrplay'  or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: rfgr_gain
     label: 'Ch0: RFGR Gain Value'
     category: RF Options
     dtype: float
     default: '9'
-    hide: ${ 'none' if ( (devname == 'sdrplay'  or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'sdrplay'  or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: ant0
     label: 'Ch0: Antenna'
     category: RF Options
@@ -145,12 +145,20 @@ parameters:
     default: 'False'
     options: ['False', 'True']
     hide: ${ 'all' if ( devname == 'plutosdr' or devname == 'airspy' or devname == 'rtlsdr' ) else 'part' }
+-   id: gain_auto_mode0
+    label: 'Ch0: Automatic Gain Control'
+    category: RF Options
+    dtype: bool
+    default: 'False'
+    options: ['False', 'True']
+    hide: ${ 'none' if (devname == 'airspy' or devname=='plutosdr' or devname == 'sdrplay') and gain_auto_mode0   else ('all' if devname
+         == 'uhd' or devname == 'lime' or devname == 'rtlsdr' else 'part')}
 -   id: dc_offset0
     label: 'Ch0: DC Offset'
     category: RF Options
     dtype: complex
     default: '0'
-    hide: ${ 'all' if ( (devname == 'uhd' or devname == 'lime' or devname == 'plutosdr' or devname == 'airspy' or devname == 'rtlsdr') or dc_offset_auto_mode0 ) else 'part' }
+    hide: ${ 'all' if ( (devname == 'uhd' or devname == 'lime' or devname == 'plutosdr' or devname == 'airspy' or devname == 'rtlsdr') or dc_offset_auto_mode0 == 'True' ) else 'part' }
 -   id: sdrplay_if_mode
     label: IF Mode
     category: RF Options
@@ -226,37 +234,37 @@ parameters:
     category: RF Options
     dtype: real
     default: '10'
-    hide: ${ 'none' if ( (devname == 'uhd' or devname == 'sidekiq' or devname == 'custom') and manual_gain0 and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( (devname == 'uhd' or devname == 'sidekiq' or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: pga_gain1
     label: 'Ch1: PGA Gain Value'
     category: RF Options
     dtype: float
     default: '24'
-    hide: ${ 'none' if ( (devname == 'plutosdr' or devname == 'xtrxsoapy' or devname == 'lime' or devname == 'custom') and manual_gain0  and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( (devname == 'plutosdr' or devname == 'xtrxsoapy' or devname == 'lime' or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: lna_gain1
     label: 'Ch1: LNA Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: tia_gain1
     label: 'Ch1: IAMP Gain Value'
     category: RF Options
     dtype: float
     default: '0'
-    hide: ${ 'none' if ( ('xtrxsoapy' or devname == 'custom') and manual_gain0  and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( ('xtrxsoapy' or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: mix_gain1
     label: 'Ch1: MIX Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'custom') and manual_gain0  and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: vga_gain1
     label: 'Ch1: VGA Gain Value'
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'hackrf' or devname == 'custom') and manual_gain0  and nchan > 1) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy'  or devname == 'hackrf' or devname == 'custom') and manual_gain0   and nchan > 1) else 'all' }
 -   id: tuner_gain1
     label: 'Ch1: TUNER Gain Value'
     category: RF Options
@@ -282,6 +290,14 @@ parameters:
     default: 'False'
     options: ['False', 'True']
     hide: ${ 'all' if ( nchan <= 1 or ( devname == 'lime' or devname == 'plutosdr' or devname == 'airspy' or devname == 'rtlsdr') ) else 'part' }
+-   id: gain_auto_mode1
+    label: 'Ch1: Automatic Gain Control'
+    category: RF Options
+    dtype: bool
+    default: 'False'
+    options: ['False', 'True']
+    hide: ${ 'none' if (devname == 'airspy' or devname=='plutosdr' or devname == 'sdrplay') and gain_auto_mode1 else ('all' if devname
+         == 'uhd' or devname == 'lime' or devname == 'rtlsdr' or nchan <= 1 else 'part')}
 -   id: dc_offset1
     label: 'Ch1: DC Offset'
     category: RF Options
@@ -317,18 +333,18 @@ templates:
     imports: import soapy
     make: |-
         None
-        if "${devname}" not in ${dev} and "${devname}" != 'custom':
-            print("ERROR: Please check device type and driver string.  Device name is not showing up in the driver string (mismatch?)")
-            exit(0)
-                    
+        if "${devname}" == 'custom':
+            dev = ${dev}
+        else:
+            dev = 'driver=' + "${devname}"
         if "${devname}" == 'sdrplay':
             f = 'if_mode=' + "${sdrplay_if_mode}" + ',' + 'agc_setpoint=' + str("${sdrplay_agc_setpoint}") + ',' + 'biasT_ctrl=' + "${sdrplay_biastee}".lower() + ',' + 'rfnotch_ctrl=' + "${sdrplay_rfnotch}".lower() + ',' + 'dabnotch_ctrl=' + "${sdrplay_dabnotch}".lower() + ',' + str(${args})
             f = f.replace('\"', '')
             f = f.replace("\\'", '')
             f = f.strip(',') 
-            self.${id} = soapy.source(${nchan}, ${dev}, "${devname}", f, ${samp_rate}, "${type}")
+            self.${id} = soapy.source(${nchan}, dev, "${devname}", f, ${samp_rate}, "${type}")
         else:
-            self.${id} = soapy.source(${nchan}, ${dev}, "${devname}", ${args}, ${samp_rate}, "${type}")
+            self.${id} = soapy.source(${nchan}, dev, "${devname}", ${args}, ${samp_rate}, "${type}")
 
         if ${clock_rate} != 0:
             self.${id}.set_master_clock_rate(${clock_rate})
@@ -339,10 +355,10 @@ templates:
         # Set up dc offsets
         if "${devname}" != 'uhd':
             if (self.${id}.hasDCOffset(0)):     
-                self.${id}.set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0})
+                self.${id}.set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0} == 'True')
             
             if (self.${id}.hasDCOffset(1)):     
-                self.${id}.set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1})
+                self.${id}.set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1} == 'True')
 
         # Setup IQ Balance
         if "${devname}" != 'uhd':
@@ -359,8 +375,8 @@ templates:
         if (self.${id}.hasFrequencyCorrection(1)):     
             self.${id}.set_frequency_correction(1,${correction1})
             
-        self.${id}.set_gain_mode(0,not ${manual_gain0})
-        self.${id}.set_gain_mode(1,not ${manual_gain1})
+        self.${id}.set_gain_mode(0,${gain_auto_mode0})
+        self.${id}.set_gain_mode(1,${gain_auto_mode1})
         
         self.${id}.set_frequency(0, ${center_freq0})
         self.${id}.set_frequency(1, ${center_freq1})
@@ -390,35 +406,35 @@ templates:
 
                 self.${id}.set_antenna(1,${ant1})
                 
-        self.${id}.set_overall_gain(0,${overall_gain0}, ${manual_gain0})
-        self.${id}.set_overall_gain(1,${overall_gain1}, ${manual_gain1})
+        self.${id}.set_overall_gain(0,${overall_gain0}, ${manual_gain0}  )
+        self.${id}.set_overall_gain(1,${overall_gain1}, ${manual_gain1}  )
         
         # Prevent some weird double-gain setting issues for systems with an overall_gain setting
         # noticed weird behavior with uhd
         if "${devname}" == 'uhd' or "${devname}" == 'sidekiq' or "${devname}" == 'bladerf':
-            self.${id}.set_gain(0,"PGA", ${pga_gain0}, ${manual_gain0})
-            self.${id}.set_gain(1,"PGA", ${pga_gain1}, ${manual_gain1})
+            self.${id}.set_gain(0,"PGA", ${pga_gain0}, ${manual_gain0}  )
+            self.${id}.set_gain(1,"PGA", ${pga_gain1}, ${manual_gain1}  )
         else:
             if "${devname}" == 'custom':
                 # If we're here and we're custom, let's still call overall gain
-                self.${id}.set_overall_gain(0,${overall_gain0}, ${manual_gain0})
-                self.${id}.set_overall_gain(1,${overall_gain1}, ${manual_gain1})
+                self.${id}.set_overall_gain(0,${overall_gain0}, ${manual_gain0}  )
+                self.${id}.set_overall_gain(1,${overall_gain1}, ${manual_gain1}  )
                 
-            self.${id}.set_gain(0,"LNA", ${lna_gain0}, ${manual_gain0})
-            self.${id}.set_gain(1,"LNA", ${lna_gain1}, ${manual_gain1})
-            self.${id}.set_gain(0,"TIA", ${tia_gain0}, ${manual_gain0})
-            self.${id}.set_gain(1,"TIA", ${tia_gain1}, ${manual_gain1})
-            self.${id}.set_gain(0,"MIX", ${mix_gain0}, ${manual_gain0})
-            self.${id}.set_gain(1,"MIX", ${mix_gain1}, ${manual_gain1})
-            self.${id}.set_gain(0,"VGA", ${vga_gain0}, ${manual_gain0})
-            self.${id}.set_gain(1,"VGA", ${vga_gain1}, ${manual_gain1})
+            self.${id}.set_gain(0,"LNA", ${lna_gain0}, ${manual_gain0}  )
+            self.${id}.set_gain(1,"LNA", ${lna_gain1}, ${manual_gain1}  )
+            self.${id}.set_gain(0,"TIA", ${tia_gain0}, ${manual_gain0}  )
+            self.${id}.set_gain(1,"TIA", ${tia_gain1}, ${manual_gain1}  )
+            self.${id}.set_gain(0,"MIX", ${mix_gain0}, ${manual_gain0}  )
+            self.${id}.set_gain(1,"MIX", ${mix_gain1}, ${manual_gain1}  )
+            self.${id}.set_gain(0,"VGA", ${vga_gain0}, ${manual_gain0}  )
+            self.${id}.set_gain(1,"VGA", ${vga_gain1}, ${manual_gain1}  )
             # Only rtl-sdr uses TUNER, so just ch0
-            self.${id}.set_gain(0,"TUNER", ${tuner_gain0}, ${manual_gain0})
+            self.${id}.set_gain(0,"TUNER", ${tuner_gain0}, ${manual_gain0}  )
             # Only hackrf uses "AMP", so just ch0
-            self.${id}.set_gain(0,"AMP", ${amp_gain0}, ${manual_gain0})
+            self.${id}.set_gain(0,"AMP", ${amp_gain0}, ${manual_gain0}  )
             # Only sdrplay uses IFGR so just ch0 for each
-            self.${id}.set_gain(0,"IFGR", ${ifgr_gain}, ${manual_gain0})
-            self.${id}.set_gain(0,"RFGR", ${rfgr_gain}, ${manual_gain0})
+            self.${id}.set_gain(0,"IFGR", ${ifgr_gain}, ${manual_gain0}  )
+            self.${id}.set_gain(0,"RFGR", ${rfgr_gain}, ${manual_gain0}  )
         
 
     callbacks:
@@ -429,28 +445,28 @@ templates:
     - set_frequency(1, ${center_freq1})
     - set_antenna(1,${ant1})
     - set_bandwidth(1,${bw1})
-    - set_overall_gain(0,${overall_gain0}, ${manual_gain0})
-    - set_overall_gain(1,${overall_gain1}, ${manual_gain1})
-    - set_gain(0,"PGA", ${pga_gain0}, ${manual_gain0})
-    - set_gain(1,"PGA", ${pga_gain1}, ${manual_gain1})
-    - set_gain(0,"LNA", ${lna_gain0}, ${manual_gain0})
-    - set_gain(1,"LNA", ${lna_gain1}, ${manual_gain1})
-    - set_gain(0,"TIA", ${tia_gain0}, ${manual_gain0})
-    - set_gain(1,"TIA", ${tia_gain1}, ${manual_gain1})
-    - set_gain(0,"MIX", ${mix_gain0}, ${manual_gain0})
-    - set_gain(1,"MIX", ${mix_gain1}, ${manual_gain1})
-    - set_gain(0,"VGA", ${vga_gain0}, ${manual_gain0})
-    - set_gain(1,"VGA", ${vga_gain1}, ${manual_gain1})
-    - set_gain(0,"TUNER", ${tuner_gain0}, ${manual_gain0})
-    - set_gain(0,"AMP", ${amp_gain0}, ${manual_gain0})
-    - set_gain(0,"IFGR", ${ifgr_gain}, ${manual_gain0})
-    - set_gain(0,"RFGR", ${rfgr_gain}, ${manual_gain0})
+    - set_overall_gain(0,${overall_gain0}, ${manual_gain0}  )
+    - set_overall_gain(1,${overall_gain1}, ${manual_gain1}  )
+    - set_gain(0,"PGA", ${pga_gain0}, ${manual_gain0}  )
+    - set_gain(1,"PGA", ${pga_gain1}, ${manual_gain1}  )
+    - set_gain(0,"LNA", ${lna_gain0}, ${manual_gain0}  )
+    - set_gain(1,"LNA", ${lna_gain1}, ${manual_gain1}  )
+    - set_gain(0,"TIA", ${tia_gain0}, ${manual_gain0}  )
+    - set_gain(1,"TIA", ${tia_gain1}, ${manual_gain1}  )
+    - set_gain(0,"MIX", ${mix_gain0}, ${manual_gain0}  )
+    - set_gain(1,"MIX", ${mix_gain1}, ${manual_gain1}  )
+    - set_gain(0,"VGA", ${vga_gain0}, ${manual_gain0}  )
+    - set_gain(1,"VGA", ${vga_gain1}, ${manual_gain1}  )
+    - set_gain(0,"TUNER", ${tuner_gain0}, ${manual_gain0}  )
+    - set_gain(0,"AMP", ${amp_gain0}, ${manual_gain0}  )
+    - set_gain(0,"IFGR", ${ifgr_gain}, ${manual_gain0}  )
+    - set_gain(0,"RFGR", ${rfgr_gain}, ${manual_gain0}  )
     - set_frequency_correction(0,${correction0})
     - set_frequency_correction(1,${correction1})
     - set_iq_balance(0,${balance0})
     - set_iq_balance(1,${balance1})
-    - set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0})
-    - set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1})
+    - set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0} == 'True')
+    - set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1} == 'True')
     
 documentation: "Soapy Source Block:\n\nDevice:\nThe device argument is a comma delimited\
     \ string used to create a device\ninstance that uses the specified driver. Device\

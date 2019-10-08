@@ -25,7 +25,8 @@ parameters:
 -   id: dev
     label: Device String
     dtype: string
-    default: 'uhd'
+    default: 'driver=uhd'
+    hide: ${ 'none' if (devname == 'custom') else 'all' }
 -   id: args
     label: Args
     dtype: string
@@ -63,19 +64,19 @@ parameters:
     default: '0'
     hide: ${ 'all' if (devname == 'uhd' or devname == 'plutosdr') else 'part' }
 -   id: manual_gain0
-    label: 'Ch0: Gain Mode'
+    label: 'Ch0: Enable Manual Gain'
     category: RF Options
-    dtype: enum
+    dtype: bool
     default: 'True'
     options: ['True', 'False']
     option_labels: [Manual, Auto]
     hide: part
 -   id: overall_gain0
-    label: 'Ch0: Gain Value'
+    label: 'Ch0: Overall Gain Value'
     category: RF Options
     dtype: real
     default: '10'
-    hide: ${ 'none' if ( (devname == 'bladerf' or devname == 'uhd' or devname == 'sidekiq' or devname == 'custom') and manual_gain0 ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'bladerf' or devname == 'uhd' or devname == 'sidekiq' or devname == 'custom') or not manual_gain0) else 'all' }
 -   id: pga_gain0
     label: 'Ch0: PGA Gain Value'
     category: RF Options
@@ -130,7 +131,7 @@ parameters:
     category: RF Options
     dtype: complex
     default: '0'
-    hide: ${ 'all' if ( (devname == 'uhd' or devname == 'lime' or devname == 'plutosdr') or dc_offset_auto_mode0 ) else 'part' }
+    hide: ${ 'all' if ( (devname == 'uhd' or devname == 'lime' or devname == 'plutosdr') or dc_offset_auto_mode0 == 'True' ) else 'part' }
 -   id: correction0
     label: 'Ch0: Frequency Correction'
     category: RF Options
@@ -143,6 +144,20 @@ parameters:
     dtype: complex
     default: '0'
     hide: ${ 'all' if ( devname == 'uhd' or devname == 'plutosdr' or devname == 'lime') else 'part' }
+-   id: gain_auto_mode0
+    label: 'Ch0: Automatic Gain Control'
+    category: RF Options
+    dtype: bool
+    default: 'False'
+    options: ['False', 'True']
+    hide: ${ 'all' if (devname == 'uhd' or devname=='plutosdr' or devname == 'lime') else 'part'}
+-   id: gain_auto_mode1
+    label: 'Ch1: Automatic Gain Control'
+    category: RF Options
+    dtype: bool
+    default: 'False'
+    options: ['False', 'True']
+    hide: ${ 'all' if nchan <= 1 or devname == 'uhd' or devname=='plutosdr' or devname == 'lime' else 'part'}
 -   id: center_freq1
     label: 'Ch1: Center Freq (Hz)'
     category: RF Options
@@ -158,7 +173,7 @@ parameters:
 -   id: manual_gain1
     label: 'Ch1: Gain Mode'
     category: RF Options
-    dtype: enum
+    dtype: bool
     default: 'True'
     options: ['True', 'False']
     option_labels: [Manual, Auto]
@@ -211,7 +226,7 @@ parameters:
     category: RF Options
     dtype: complex
     default: '0'
-    hide: ${ 'all' if nchan <=1 or ( devname == 'uhd' or devname == 'plutosdr' or devname == 'lime' ) or dc_offset_auto_mode1 else 'part' }
+    hide: ${ 'all' if nchan <=1 or ( devname == 'uhd' or devname == 'plutosdr' or devname == 'lime' ) or dc_offset_auto_mode1 == 'True' else 'part' }
 -   id: correction1
     label: 'Ch1: Frequency Correction'
     category: RF Options
@@ -245,8 +260,8 @@ templates:
                     
         self.${id} = soapy.sink(${nchan}, ${dev}, "${devname}", ${args}, ${samp_rate}, "${type}", ${length_tag_name})
 
-        self.${id}.set_gain_mode(0,not ${manual_gain0})
-        self.${id}.set_gain_mode(1,not ${manual_gain1})
+        self.${id}.set_gain_mode(0,${gain_auto_mode0})
+        self.${id}.set_gain_mode(1,${gain_auto_mode1})
         
         self.${id}.set_frequency(0, ${center_freq0})
         self.${id}.set_frequency(1, ${center_freq1})
@@ -332,8 +347,8 @@ templates:
     - set_frequency_correction(1,${correction1})
     - set_iq_balance(0,${balance0})
     - set_iq_balance(1,${balance1})
-    - set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0})
-    - set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1})
+    - set_dc_offset(0,${dc_offset0},${dc_offset_auto_mode0} == 'True')
+    - set_dc_offset(1,${dc_offset1},${dc_offset_auto_mode1} == 'True')
 
 documentation: "Soapy Sink Block:\n\nDevice:\nThe device argument is a comma delimited\
     \ string used to create a device\ninstance that uses the specified driver. Device\
