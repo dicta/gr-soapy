@@ -580,15 +580,10 @@ namespace gr
     		// Added some error handling
     		switch(read) {
     		case SOAPY_SDR_OVERFLOW:
-    			if (isUHD) {
-    				// Behave like usrp_source_impl.cc
+				// Behave like usrp_source_impl.cc
 
-    		        // ignore overflows and try work again
-    		        return work(noutput_items, input_items, output_items);
-    			}
-    			else {
-        			std::cout << "sO";
-    			}
+		        // ignore overflows and try work again
+		        return work(noutput_items, input_items, output_items);
     		break;
     		case SOAPY_SDR_UNDERFLOW:
     			std::cout << "sU";
