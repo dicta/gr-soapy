@@ -83,13 +83,13 @@ parameters:
     category: RF Options
     dtype: float
     default: '10'
-    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'airspy' or devname == 'lime' or devname == 'hackrf' or devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: tia_gain0
     label: 'Ch0: TIA Gain Value'
     category: RF Options
     dtype: float
     default: '0'
-    hide: ${ 'none' if ( (devname == 'xtrxsoapy' or devname == 'custom') and manual_gain0  ) else 'all' }
+    hide: ${ 'none' if ( (devname == 'xtrxsoapy' or devname == 'lime' or devname == 'custom') and manual_gain0  ) else 'all' }
 -   id: mix_gain0
     label: 'Ch0: MIX Gain Value'
     category: RF Options
@@ -411,7 +411,7 @@ templates:
         
         # Prevent some weird double-gain setting issues for systems with an overall_gain setting
         # noticed weird behavior with uhd
-        if "${devname}" == 'uhd' or "${devname}" == 'sidekiq' or "${devname}" == 'bladerf':
+        if "${devname}" == 'uhd' or "${devname}" == 'sidekiq' or "${devname}" == 'bladerf' or "${devname}" == 'lime':
             self.${id}.set_gain(0,"PGA", ${pga_gain0}, ${manual_gain0}  )
             self.${id}.set_gain(1,"PGA", ${pga_gain1}, ${manual_gain1}  )
         else:
