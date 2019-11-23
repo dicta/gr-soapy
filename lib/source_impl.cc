@@ -78,9 +78,8 @@ namespace gr
       }
 
       d_stream = d_device->setupStream (SOAPY_SDR_RX, d_type, channs, dev_args);
-      d_device->activateStream (d_stream);
       d_mtu = d_device->getStreamMTU (d_stream);
-      
+
       /* Apply device settings */
       for(const std::pair<std::string, std::string>& iter: dev_args) {
         d_device->writeSetting(iter.first, iter.second);
@@ -401,7 +400,13 @@ namespace gr
             pmt::cdr (pmt::nth (i, msg)), chann);
       }
     }
-    
+
+    bool
+    source_impl::start()
+    {
+      return (0 == d_device->activateStream(d_stream));
+    }
+
     bool
     source_impl::stop()
     {

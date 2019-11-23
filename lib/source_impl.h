@@ -352,7 +352,8 @@ namespace gr {
        * @param chann an available channel on the device
        */
       void cmd_handler_antenna(pmt::pmt_t val, size_t chann);
-      
+
+      bool start();
       bool stop();
     };
   } // namespace soapy
