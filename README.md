@@ -20,9 +20,10 @@ on the device they want to use.
 1. `git clone https://gitlab.com/librespacefoundation/gr-soapy`
 2. `cd gr-soapy`
 3. `mkdir build`
-4. `cmake ..`
-5. `make`
-6. `sudo make install`
+4. `cd build`
+5. `cmake ..`
+6. `make`
+7. `sudo make install`
 
 If this is the first time you are building the gr-soapy module run
 `sudo ldconfig`
